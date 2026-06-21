@@ -3,8 +3,7 @@ using UnityEngine;
 
 public class MovementManager : MonoBehaviour
 {
-    private List<Character> _players;
-    private List<Character> _enemies;
+    private List<Character> _characters;
     private List<List<GridCell>> _map;
 
     private void Update()
@@ -19,10 +18,9 @@ public class MovementManager : MonoBehaviour
             MoveCharacter(0, -1);
     }
 
-    private void Initialize(List<Character> playersList, List<Character> enemiesList, List<List<GridCell>> map)
+    private void Initialize(List<Character> charactertsList, List<List<GridCell>> map)
     {
-        _players = playersList;
-        _enemies = enemiesList;
+        _characters = charactertsList;
         _map = map;
     }
 

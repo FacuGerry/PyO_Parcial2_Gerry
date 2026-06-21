@@ -1467,18 +1467,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameController
   _data: {fileID: 11400000, guid: aaede70612ca70c41b945f7e4d2cdd98, type: 2}
-  _playersData:
+  _charsData:
   - {fileID: 11400000, guid: f0ee28987866c814e9ddcc3380105d88, type: 2}
   - {fileID: 11400000, guid: ff7e3724b2e1a6e419e6f0d140b6d2f4, type: 2}
   - {fileID: 11400000, guid: 6bcf053dc4b450a49b2fdc08d5f1bf6e, type: 2}
-  _playersGos:
+  - {fileID: 11400000, guid: 1dc4a417480259242b2246663da57c22, type: 2}
+  - {fileID: 11400000, guid: 1dc4a417480259242b2246663da57c22, type: 2}
+  _charsGos:
   - {fileID: 933619885}
   - {fileID: 432828184}
   - {fileID: 2116794029}
-  _enemiesData:
-  - {fileID: 11400000, guid: 1dc4a417480259242b2246663da57c22, type: 2}
-  - {fileID: 11400000, guid: 1dc4a417480259242b2246663da57c22, type: 2}
-  _enemiesGos:
   - {fileID: 1243934362}
   - {fileID: 1763288010}
 --- !u!1 &869777329

@@ -1,30 +1,24 @@
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 
 public class TurnManager
 {
-    public event Action<Character> OnTurnChanged;
+    public event Action<int> OnTurnChanged;
 
-    private List<Character> _characters;
+    private int _maxIndex;
     private int _index = 0;
 
-    public TurnManager(List<Character> list)
+    public TurnManager(int maxIndex)
     {
-        _characters = list;
-        Debug.Log("Turn of " + GetCurrentCharacter());
-        OnTurnChanged?.Invoke(GetCurrentCharacter());
+        _maxIndex = maxIndex;
+        OnTurnChanged?.Invoke(_index);
     }
 
     public void ChangeTurn()
     {
         _index++;
-        if (_index >= _characters.Count)
+        if (_index >= _maxIndex)
             _index = 0;
 
-        Debug.Log("Turn of " + GetCurrentCharacter());
-        OnTurnChanged?.Invoke(GetCurrentCharacter());
+        OnTurnChanged?.Invoke(_index);
     }
-
-    public Character GetCurrentCharacter() => _characters[_index];
 }

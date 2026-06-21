@@ -4,47 +4,31 @@ using UnityEngine;
 
 public class GameInitializer : MonoBehaviour
 {
-    public event Action<List<List<GridCell>>, List<Character>, List<Character>> OnStartUpCompleted;
+    public event Action<List<List<GridCell>>, List<Character>> OnStartUpCompleted; // _gridCells, _chars
 
+    // Map Data - RECIEVE
     private MapDataSO _data;
 
-    // Characters data - NO NEED TO SEND BACK
-    private CharacterDataSO[] _playersData;
-    private CharacterDataSO[] _enemiesData;
-
-    // Characters gameObjects - NO NEED TO SEND BACK
-    private GameObject[] _playersGos;
-    private GameObject[] _enemiesGos;
-
-    // Map cells
+    // Map cells - SEND BACK
     private List<List<GridCell>> _gridCells;
 
-    // Characters separate
-    private List<Character> _playersChars = new();
-    private List<Character> _enemiesChars = new();
+    // Characters - SEND BACK
+    private List<Character> _chars = new();
 
-    public void StartGame(MapDataSO mapData, CharacterDataSO[] playersData, CharacterDataSO[] enemiesData, GameObject[] playersGos, GameObject[] enemiesGos)
+    public void StartGame(MapDataSO mapData, CharacterDataSO[] charsData, GameObject[] charsGos)
     {
         _data = mapData;
-        
-        _playersData = playersData;
-        _enemiesData = enemiesData;
-        
-        _playersGos = playersGos;
-        _enemiesGos = enemiesGos;
 
         MapBuilder mapBuilder = new();
         _gridCells = mapBuilder.GenerateMap(_data.gridHeight, _data.gridWidth, _data.cellPrefab);
 
         InitializeMap();
 
-        CreateCharacters(_playersData);
-        CreateCharacters(_enemiesData);
+        CreateCharacters(charsData, charsGos);
 
-        SpawnCharacters(_playersChars, TerrainType.PLAYER);
-        SpawnCharacters(_enemiesChars, TerrainType.ENEMY);
+        SpawnCharacters(_chars);
 
-        OnStartUpCompleted?.Invoke(_gridCells, _playersChars, _enemiesChars);
+        OnStartUpCompleted?.Invoke(_gridCells, _chars);
     }
 
     private void InitializeMap()
@@ -64,29 +48,16 @@ public class GameInitializer : MonoBehaviour
         }
     }
 
-    private void CreateCharacters(CharacterDataSO[] array)
+    private void CreateCharacters(CharacterDataSO[] dataArray, GameObject[] objectsArray)
     {
-        for (int i = 0; i < array.Length; i++)
+        for (int i = 0; i < dataArray.Length; i++)
         {
-            if (array == _playersData)
-            {
-                Character character = new(array[i], Vector2Int.zero, _playersGos[i]);
-                _playersChars.Add(character);
-            }
-            else if (array == _enemiesData)
-            {
-                Character character = new(array[i], Vector2Int.zero, _enemiesGos[i]);
-                _enemiesChars.Add(character);
-            }
-            else
-            {
-                Debug.LogError("NO CHARACTER WAS CREATED!");
-                return;
-            }
+            Character character = new(dataArray[i], Vector2Int.zero, objectsArray[i]);
+            _chars.Add(character);
         }
     }
 
-    private void SpawnCharacters(List<Character> list, TerrainType type)
+    private void SpawnCharacters(List<Character> list)
     {
         for (int i = 0; i < list.Count; i++)
         {
@@ -100,7 +71,9 @@ public class GameInitializer : MonoBehaviour
                 randomY = UnityEngine.Random.Range(0, _data.gridHeight);
             } while (_gridCells[randomY][randomX].GetTerrainType() != TerrainType.GRASS);
 
+            TerrainType type = list[i].GetData().isPlayer ? TerrainType.PLAYER : TerrainType.ENEMY;
             _gridCells[randomY][randomX].SetNewTerrainType(type);
+
             character.GetGO().transform.position = _gridCells[randomY][randomX].GetCellGO().transform.position;
         }
     }

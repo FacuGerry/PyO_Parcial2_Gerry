@@ -13,6 +13,7 @@ public class Character
         _go = go;
     }
 
+    public CharacterDataSO GetData() => _data;
     public GameObject GetGO() => _go;
     public Vector2Int GetPosition() => _position;
 

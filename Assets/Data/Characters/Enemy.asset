@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43e2b36363ed4c447bb3132e714e52c4, type: 3}
   m_Name: Enemy
   m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
+  characterName: Enemy
+  isPlayer: 0
   maxLife: 10
   speed: 1
   range: 3

@@ -3,6 +3,12 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "CharacterData", menuName = "GameData/CharacterData")]
 public class CharacterDataSO : ScriptableObject
 {
+    [Header("Name")]
+    public string characterName;
+
+    [Header("Is player?")]
+    public bool isPlayer;
+
     [Header("Life")]
     public int maxLife;
 
