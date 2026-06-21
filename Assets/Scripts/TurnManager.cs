@@ -2,24 +2,27 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TurnManager : MonoBehaviour
+public class TurnManager
 {
     public event Action<Character> OnTurnChanged;
 
-    [SerializeField] private List<Character> _characters;
+    private List<Character> _characters;
     private int _index = 0;
 
-    private void Start()
+    public TurnManager(List<Character> list)
     {
-        
+        _characters = list;
+        Debug.Log("Turn of " + GetCurrentCharacter());
+        OnTurnChanged?.Invoke(GetCurrentCharacter());
     }
 
-    private void ChangeTurn()
+    public void ChangeTurn()
     {
         _index++;
         if (_index >= _characters.Count)
             _index = 0;
 
+        Debug.Log("Turn of " + GetCurrentCharacter());
         OnTurnChanged?.Invoke(GetCurrentCharacter());
     }
 

@@ -4,37 +4,47 @@ using UnityEngine;
 
 public class GameInitializer : MonoBehaviour
 {
-    public event Action<List<Character>, List<Character>, List<List<GridCell>>> OnStartUpCompleted;
+    public event Action<List<List<GridCell>>, List<Character>, List<Character>> OnStartUpCompleted;
 
-    [Header("Data")]
-    [SerializeField] private MapDataSO _data;
+    private MapDataSO _data;
 
-    [Header("Arrays Data")]
-    [SerializeField] private CharacterDataSO[] _players; // Los hago arrays y no listas porque los arrays ocupan la memoria de forma más ordenada
-    [SerializeField] private CharacterDataSO[] _enemies; // Además, no necesito modificar el tamaño durante runtime
+    // Characters data - NO NEED TO SEND BACK
+    private CharacterDataSO[] _playersData;
+    private CharacterDataSO[] _enemiesData;
 
-    [Header("Arrays GOs")]
-    [SerializeField] private GameObject[] _playersGos; // Los hago arrays y no listas porque los arrays ocupan la memoria de forma más ordenada
-    [SerializeField] private GameObject[] _enemiesGos; // Además, no necesito modificar el tamaño durante runtime
+    // Characters gameObjects - NO NEED TO SEND BACK
+    private GameObject[] _playersGos;
+    private GameObject[] _enemiesGos;
 
+    // Map cells
     private List<List<GridCell>> _gridCells;
-    private List<Character> _playersChars;
-    private List<Character> _enemiesChars;
 
-    private void Start()
+    // Characters separate
+    private List<Character> _playersChars = new();
+    private List<Character> _enemiesChars = new();
+
+    public void StartGame(MapDataSO mapData, CharacterDataSO[] playersData, CharacterDataSO[] enemiesData, GameObject[] playersGos, GameObject[] enemiesGos)
     {
+        _data = mapData;
+        
+        _playersData = playersData;
+        _enemiesData = enemiesData;
+        
+        _playersGos = playersGos;
+        _enemiesGos = enemiesGos;
+
         MapBuilder mapBuilder = new();
         _gridCells = mapBuilder.GenerateMap(_data.gridHeight, _data.gridWidth, _data.cellPrefab);
 
         InitializeMap();
 
-        CreateCharacters(_players);
-        CreateCharacters(_enemies);
+        CreateCharacters(_playersData);
+        CreateCharacters(_enemiesData);
 
-        SpawnCharacters(_players, TerrainType.PLAYER);
-        SpawnCharacters(_enemies, TerrainType.ENEMY);
+        SpawnCharacters(_playersChars, TerrainType.PLAYER);
+        SpawnCharacters(_enemiesChars, TerrainType.ENEMY);
 
-        OnStartUpCompleted?.Invoke(_playersChars, _enemiesChars, _gridCells);
+        OnStartUpCompleted?.Invoke(_gridCells, _playersChars, _enemiesChars);
     }
 
     private void InitializeMap()
@@ -58,20 +68,17 @@ public class GameInitializer : MonoBehaviour
     {
         for (int i = 0; i < array.Length; i++)
         {
-            Character character = null;
-
-            if (array == _players)
+            if (array == _playersData)
             {
-                character = new(array[i], Vector2Int.zero, _playersGos[i]);
+                Character character = new(array[i], Vector2Int.zero, _playersGos[i]);
                 _playersChars.Add(character);
             }
-            else if (array == _enemies)
+            else if (array == _enemiesData)
             {
-                character = new(array[i], Vector2Int.zero, _enemiesGos[i]);
+                Character character = new(array[i], Vector2Int.zero, _enemiesGos[i]);
                 _enemiesChars.Add(character);
             }
-
-            if (character == null)
+            else
             {
                 Debug.LogError("NO CHARACTER WAS CREATED!");
                 return;
@@ -79,11 +86,11 @@ public class GameInitializer : MonoBehaviour
         }
     }
 
-    private void SpawnCharacters(CharacterDataSO[] array, TerrainType type)
+    private void SpawnCharacters(List<Character> list, TerrainType type)
     {
-        for (int i = 0; i < array.Length; i++)
+        for (int i = 0; i < list.Count; i++)
         {
-            Character character = null;
+            Character character = list[i];
 
             int randomX;
             int randomY;

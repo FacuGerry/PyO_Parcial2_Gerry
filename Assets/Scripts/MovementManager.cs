@@ -1,26 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(GameInitializer), typeof(TurnManager))]
 public class MovementManager : MonoBehaviour
 {
-    private GameInitializer _initializer;
-    private TurnManager _turns;
-
     private List<Character> _players;
     private List<Character> _enemies;
     private List<List<GridCell>> _map;
-
-    private void Awake()
-    {
-        _initializer = GetComponent<GameInitializer>();
-        _turns = GetComponent<TurnManager>();
-    }
-
-    private void OnEnable()
-    {
-        _initializer.OnStartUpCompleted += OnStartUpCompleted_StartTurns;
-    }
 
     private void Update()
     {
@@ -34,12 +19,7 @@ public class MovementManager : MonoBehaviour
             MoveCharacter(0, -1);
     }
 
-    private void OnDisable()
-    {
-        _initializer.OnStartUpCompleted -= OnStartUpCompleted_StartTurns;
-    }
-
-    private void OnStartUpCompleted_StartTurns(List<Character> playersList, List<Character> enemiesList, List<List<GridCell>> map)
+    private void Initialize(List<Character> playersList, List<Character> enemiesList, List<List<GridCell>> map)
     {
         _players = playersList;
         _enemies = enemiesList;
