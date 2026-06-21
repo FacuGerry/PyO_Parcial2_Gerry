@@ -29,6 +29,7 @@ public class GameInitializer : MonoBehaviour
         SpawnCharacters(_chars);
 
         OnStartUpCompleted?.Invoke(_gridCells, _chars);
+        Debug.Log("Game initialized!");
     }
 
     private void InitializeMap()
@@ -75,6 +76,7 @@ public class GameInitializer : MonoBehaviour
             _gridCells[randomY][randomX].SetNewTerrainType(type);
 
             character.GetGO().transform.position = _gridCells[randomY][randomX].GetCellGO().transform.position;
+            character.SetNewPosition(new(randomX, randomY));
         }
     }
 }

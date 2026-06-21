@@ -3,10 +3,43 @@ using UnityEngine;
 
 public class MovementManager : MonoBehaviour
 {
-    private List<Character> _characters;
+    // Current character - used to know if it is a player or an enemy, and therefore knowing HOW to move
+    private Character _currentCharacter;
+
+    // Players list - used by enemies to know where to move
+    private List<Character> _players;
+
+    // Map grid - used to know where to go
     private List<List<GridCell>> _map;
 
+    // current speed - used for calculating movements left
+    private int _currentSpeed = 0;
+
     private void Update()
+    {
+        if (_currentSpeed <= 0 || _currentCharacter == null) return;
+
+        if (_currentCharacter.GetData().isPlayer)
+            PlayerMovement();
+        else
+            EnemyMovement();
+    }
+
+    public void Initialize(List<List<GridCell>> map) => _map = map;
+
+    public void ChangeCurrentCharacter(Character newChar)
+    {
+        _currentCharacter = newChar;
+        _currentSpeed = _currentCharacter.GetData().speed;
+    }
+
+    public void StopCharacterMovement()
+    {
+        _currentSpeed = 0;
+        _currentCharacter = null;
+    }
+
+    private void PlayerMovement()
     {
         if (Input.GetKeyDown(KeyCode.LeftArrow))
             MoveCharacter(-1, 0);
@@ -18,10 +51,9 @@ public class MovementManager : MonoBehaviour
             MoveCharacter(0, -1);
     }
 
-    private void Initialize(List<Character> charactertsList, List<List<GridCell>> map)
+    private void EnemyMovement()
     {
-        _characters = charactertsList;
-        _map = map;
+
     }
 
     private void MoveCharacter(int movx, int movy)
@@ -31,15 +63,16 @@ public class MovementManager : MonoBehaviour
             ChangeCharacterCell(posibleNewPosition);
     }
 
-    private Vector2Int GetCurrentCharacterPosition() => Vector2Int.zero; // new((int)GetCurrentCharacter().transform.position.x, (int)GetCurrentCharacter().transform.position.y);
+    private Vector2Int GetCurrentCharacterPosition() => _currentCharacter.GetPosition();
     private Vector2Int GetPosibleNewPosition(int movx, int movy) => new(GetCurrentCharacterPosition().x + movx, GetCurrentCharacterPosition().y + movy);
 
     private bool CheckIsValidPosition(Vector2Int position)
     {
-        return position.x >= 0 &&
-            position.x < _map[position.y].Count &&
-            position.y < _map.Count &&
-            position.y >= 0;
+        if (position.x < 0 || position.x >= _map[position.y].Count) return false;
+
+        if (position.y < 0 || position.y >= _map.Count) return false;
+
+        return true;
     }
 
     private void ChangeCharacterCell(Vector2Int newPosition)
@@ -47,9 +80,13 @@ public class MovementManager : MonoBehaviour
         GridCell gridCell = _map[GetCurrentCharacterPosition().y][GetCurrentCharacterPosition().x];
         gridCell.SetNewTerrainType(TerrainType.GRASS);
 
-        // move player with newPosition
+        _currentCharacter.SetNewPosition(newPosition);
+        _currentSpeed--;
 
-        gridCell = _map[GetCurrentCharacterPosition().y][GetCurrentCharacterPosition().x];
-        gridCell.SetNewTerrainType(TerrainType.PLAYER);
+        GridCell newCell = _map[GetCurrentCharacterPosition().y][GetCurrentCharacterPosition().x];
+        TerrainType type = _currentCharacter.GetData().isPlayer ? TerrainType.PLAYER : TerrainType.ENEMY;
+        newCell.SetNewTerrainType(type);
+
+        _currentCharacter.GetGO().transform.position = newCell.GetCellGO().transform.position;
     }
 }
