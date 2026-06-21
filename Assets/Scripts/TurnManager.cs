@@ -12,10 +12,9 @@ public class TurnManager
         _maxIndex = maxIndex;
     }
 
-    public void StartTurns()
-    {
-        OnTurnChanged?.Invoke(_index);
-    }
+    public void StartTurns() => OnTurnChanged?.Invoke(_index);
+
+    public void ReduceMaxIndex() => _maxIndex--;
 
     public void ChangeTurn()
     {

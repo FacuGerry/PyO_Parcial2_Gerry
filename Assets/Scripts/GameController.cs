@@ -44,6 +44,7 @@ public class GameController : MonoBehaviour
     private void OnEnable()
     {
         _gameInit.OnStartUpCompleted += OnStartUpCompleted_LoadListsAndStartTurns;
+        _movementMng.OnMovementEnd += OnMovementEnd_ChangeTurns;
 
         foreach (HealthSystem hs in _hs)
             hs.OnCharacterDie += OnCharacterDie_RemoveFromList;
@@ -60,6 +61,7 @@ public class GameController : MonoBehaviour
     private void OnDisable()
     {
         _gameInit.OnStartUpCompleted -= OnStartUpCompleted_LoadListsAndStartTurns;
+        _movementMng.OnMovementEnd -= OnMovementEnd_ChangeTurns;
     }
 
     private void OnDestroy()
@@ -76,7 +78,7 @@ public class GameController : MonoBehaviour
         _gridCells = map;
         _characters = chars;
 
-        _movementMng.Initialize(_gridCells);
+        _movementMng.Initialize(_gridCells, _players);
 
         CreateSeparateCharactersList();
         StartTurns();
@@ -91,16 +93,36 @@ public class GameController : MonoBehaviour
 
     private void OnCharacterDie_RemoveFromList(CharacterDataSO data)
     {
-        if (RemoveCharacterFromList(_players, data) || RemoveCharacterFromList(_enemies, data))
-            RemoveCharacterFromList(_characters, data);
-        else
-            Debug.LogError("A CHARACTER DIED BUT WAS NOT FOUND IN ANY LIST");
-
-        if (AllEnemiesDead())
+        if (RemoveCharacterFromList(_players, data))
         {
-            // Start PvP combat
+            if (!AllEnemiesDead())
+            {
+                // end game
+            }
+            else
+            {
+                RemoveCharacterFromList(_characters, data);
+            }
         }
+        else if (RemoveCharacterFromList(_enemies, data))
+        {
+            RemoveCharacterFromList(_characters, data);
+
+            if (AllEnemiesDead())
+            {
+                // Start PvP combat
+            }
+        }
+        else
+        {
+            Debug.LogError("A CHARACTER DIED BUT WAS NOT FOUND IN ANY LIST");
+            return;
+        }
+
+        _turnMng.ReduceMaxIndex();
     }
+
+    private void OnMovementEnd_ChangeTurns() => _turnMng.ChangeTurn();
 
     private bool RemoveCharacterFromList(List<Character> list, CharacterDataSO data)
     {

@@ -1,13 +1,17 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class MovementManager : MonoBehaviour
 {
+    public event Action OnMovementEnd;
+
     // Current character - used to know if it is a player or an enemy, and therefore knowing HOW to move
     private Character _currentCharacter;
 
     // Players list - used by enemies to know where to move
-    private List<Character> _players;
+    private List<Character> _players = new();
 
     // Map grid - used to know where to go
     private List<List<GridCell>> _map;
@@ -25,7 +29,11 @@ public class MovementManager : MonoBehaviour
             EnemyMovement();
     }
 
-    public void Initialize(List<List<GridCell>> map) => _map = map;
+    public void Initialize(List<List<GridCell>> map, List<Character> players)
+    {
+        _map = map;
+        _players = players;
+    }
 
     public void ChangeCurrentCharacter(Character newChar)
     {
@@ -53,7 +61,67 @@ public class MovementManager : MonoBehaviour
 
     private void EnemyMovement()
     {
+        List<Vector2Int> playersPositions = GetPlayersPositions();
+        if (playersPositions == null) return;
 
+        Vector2Int closestPlayer = CalculateClosestPlayer(playersPositions);
+        Vector2Int currentPos = GetCurrentCharacterPosition();
+
+        int moveX = 0;
+        int moveY = 0;
+
+        int distX = Mathf.Abs(closestPlayer.x - currentPos.x);
+        int distY = Mathf.Abs(closestPlayer.y - currentPos.y);
+
+        if (distX > distY)
+            moveX = closestPlayer.x > currentPos.x ? 1 : -1;
+        else
+            moveY = closestPlayer.y > currentPos.y ? 1 : -1;
+
+        Vector2Int posibleNewPos = GetPosibleNewPosition(moveX, moveY);
+
+        if (!CheckIsValidPosition(posibleNewPos))
+        {
+            StopCharacterMovement();
+            OnMovementEnd?.Invoke();
+            return;
+        }
+
+        ChangeCharacterCell(posibleNewPos);
+    }
+
+    private List<Vector2Int> GetPlayersPositions()
+    {
+        List<Vector2Int> playerPos = new();
+        foreach (Character player in _players)
+            playerPos.Add(player.GetPosition());
+
+        if (playerPos.Count == 0)
+        {
+            Debug.LogError("NO CHARACTER POSITION WAS ADDED TO THE LIST");
+            return null;
+        }
+
+        return playerPos;
+    }
+
+    private Vector2Int CalculateClosestPlayer(List<Vector2Int> playersPos)
+    {
+        Vector2Int charPos = GetCurrentCharacterPosition();
+        int distance = 999;
+        int playerIndex = 0;
+
+        for (int i = 0; i < _players.Count; i++)
+        {
+            int possibleDistance = Mathf.Abs(charPos.x - playersPos[i].x) + Mathf.Abs(charPos.y - playersPos[i].y);
+            if (possibleDistance < distance)
+            {
+                distance = possibleDistance;
+                playerIndex = i;
+            }
+        }
+
+        return _players[playerIndex].GetPosition();
     }
 
     private void MoveCharacter(int movx, int movy)
@@ -68,9 +136,12 @@ public class MovementManager : MonoBehaviour
 
     private bool CheckIsValidPosition(Vector2Int position)
     {
+        if (position.y < 0 || position.y >= _map.Count) return false;
+
         if (position.x < 0 || position.x >= _map[position.y].Count) return false;
 
-        if (position.y < 0 || position.y >= _map.Count) return false;
+        GridCell cell = _map[position.y][position.x];
+        if (cell.GetTerrainType() == TerrainType.PLAYER || cell.GetTerrainType() == TerrainType.ENEMY) return false;
 
         return true;
     }
@@ -88,5 +159,8 @@ public class MovementManager : MonoBehaviour
         newCell.SetNewTerrainType(type);
 
         _currentCharacter.GetGO().transform.position = newCell.GetCellGO().transform.position;
+
+        if (_currentSpeed <= 0)
+            OnMovementEnd?.Invoke();
     }
 }
