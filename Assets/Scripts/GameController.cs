@@ -122,7 +122,11 @@ public class GameController : MonoBehaviour
         _turnMng.ReduceMaxIndex();
     }
 
-    private void OnMovementEnd_ChangeTurns() => _turnMng.ChangeTurn();
+    private void OnMovementEnd_ChangeTurns()
+    {
+        _hs[_activeCharacter].TakeDamage(5);
+        _turnMng.ChangeTurn();
+    }
 
     private bool RemoveCharacterFromList(List<Character> list, CharacterDataSO data)
     {

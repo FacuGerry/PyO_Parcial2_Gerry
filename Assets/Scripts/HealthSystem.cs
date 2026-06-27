@@ -12,6 +12,7 @@ public class HealthSystem : MonoBehaviour
     private void Start()
     {
         _currentHealth = _data.maxLife;
+        OnLifeUpdated?.Invoke(_currentHealth);
     }
 
     public void TakeDamage(int damage)
