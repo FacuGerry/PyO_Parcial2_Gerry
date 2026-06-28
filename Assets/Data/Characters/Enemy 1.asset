@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 43e2b36363ed4c447bb3132e714e52c4, type: 3}
-  m_Name: Enemy
+  m_Name: Enemy 1
   m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
-  characterName: Enemy
+  characterName: Enemy 1
   isPlayer: 0
   maxLife: 10
   speed: 1

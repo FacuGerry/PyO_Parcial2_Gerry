@@ -17,6 +17,8 @@ public class HealthSystem : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        if (_currentHealth <= 0) return;
+
         _currentHealth -= damage;
 
         if (_currentHealth <= 0)
@@ -25,6 +27,8 @@ public class HealthSystem : MonoBehaviour
 
             OnLifeUpdated?.Invoke(_currentHealth);
             OnCharacterDie?.Invoke(_data);
+
+            Debug.Log(_data.characterName + " died");
 
             gameObject.SetActive(false);
         }

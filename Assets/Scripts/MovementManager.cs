@@ -18,9 +18,11 @@ public class MovementManager : MonoBehaviour
     // current speed - used for calculating movements left
     private int _currentSpeed = 0;
 
+    private bool _canMove = true;
+
     private void Update()
     {
-        if (_currentSpeed <= 0 || _currentCharacter == null) return;
+        if (_currentSpeed <= 0 || _currentCharacter == null || !_canMove) return;
 
         if (_currentCharacter.GetData().isPlayer)
             PlayerMovement();
@@ -162,4 +164,6 @@ public class MovementManager : MonoBehaviour
         if (_currentSpeed <= 0)
             OnMovementEnd?.Invoke();
     }
+
+    public void ResetTerrainTypeInPosition(Character character) => _map[character.GetPosition().y][character.GetPosition().x].SetNewTerrainType(TerrainType.GRASS);
 }

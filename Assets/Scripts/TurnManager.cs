@@ -14,8 +14,6 @@ public class TurnManager
 
     public void StartTurns() => OnTurnChanged?.Invoke(_index);
 
-    public void ReduceMaxIndex() => _maxIndex--;
-
     public void ChangeTurn()
     {
         _index++;

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
 
 public class GameController : MonoBehaviour
 {
+    public event Action OnLose;
+    public event Action<Character> OnWin;
+
     [Header("Data")]
     [SerializeField] private MapDataSO _data;
 
@@ -39,6 +41,12 @@ public class GameController : MonoBehaviour
     {
         _gameInit = gameObject.AddComponent<GameInitializer>();
         _movementMng = gameObject.AddComponent<MovementManager>();
+
+        foreach (GameObject character in _charsGos)
+        {
+            HealthSystem hs = character.GetComponent<HealthSystem>();
+            _hs.Add(hs);
+        }
     }
 
     private void OnEnable()
@@ -53,22 +61,19 @@ public class GameController : MonoBehaviour
     private void Start()
     {
         _gameInit.StartGame(_data, _charsData, _charsGos);
-
-        foreach (GameObject character in _charsGos)
-            _hs.Add(character.GetComponent<HealthSystem>());
+        AddHealthSytstemToCharacters();
     }
 
     private void OnDisable()
     {
         _gameInit.OnStartUpCompleted -= OnStartUpCompleted_LoadListsAndStartTurns;
         _movementMng.OnMovementEnd -= OnMovementEnd_ChangeTurns;
+        foreach (HealthSystem hs in _hs)
+            hs.OnCharacterDie -= OnCharacterDie_RemoveFromList;
     }
 
     private void OnDestroy()
     {
-        foreach (HealthSystem hs in _hs)
-            hs.OnCharacterDie -= OnCharacterDie_RemoveFromList;
-
         if (_turnMng != null)
             _turnMng.OnTurnChanged -= OnTurnChanged_ChangeActiveCharacter;
     }
@@ -80,33 +85,32 @@ public class GameController : MonoBehaviour
 
         _movementMng.Initialize(_gridCells, _players);
 
-        CreateSeparateCharactersList();
+        SeparateCharactersList(_characters);
         StartTurns();
     }
 
     private void OnTurnChanged_ChangeActiveCharacter(int index)
     {
-        _activeCharacter = index;
-        _movementMng.ChangeCurrentCharacter(_characters[_activeCharacter]);
-        Debug.Log(_characters[_activeCharacter].GetData().characterName + "'s turn");
+        if (!_characters[index].IsAlive())
+        {
+            _turnMng.ChangeTurn();
+            return;
+        }
+
+        CheckForNextMove(index);
     }
 
     private void OnCharacterDie_RemoveFromList(CharacterDataSO data)
     {
-        if (RemoveCharacterFromList(_players, data))
+        ResetTerrainInPosition(data);
+
+        if (KillCharacter(_players, data))
         {
-            if (!AllEnemiesDead())
-            {
-                // end game
-            }
-            else
-            {
-                RemoveCharacterFromList(_characters, data);
-            }
+            KillCharacter(_characters, data);
         }
-        else if (RemoveCharacterFromList(_enemies, data))
+        else if (KillCharacter(_enemies, data))
         {
-            RemoveCharacterFromList(_characters, data);
+            KillCharacter(_characters, data);
 
             if (AllEnemiesDead())
             {
@@ -118,41 +122,129 @@ public class GameController : MonoBehaviour
             Debug.LogError("A CHARACTER DIED BUT WAS NOT FOUND IN ANY LIST");
             return;
         }
+    }
 
-        _turnMng.ReduceMaxIndex();
+    private void CheckForNextMove(int index)
+    {
+        if (OnePlayerAlive())
+        {
+            Character winner = GetAlivePlayer();
+            OnWin?.Invoke(winner);
+            _movementMng.StopCharacterMovement();
+        }
+        else if (!AllEnemiesDead() && IsPlayerDead())
+        {
+            OnLose?.Invoke();
+            Debug.Log("A player died with enemies alive!");
+            _movementMng.StopCharacterMovement();
+        }
+        else
+        {
+            _activeCharacter = index;
+            _movementMng.ChangeCurrentCharacter(_characters[_activeCharacter]);
+            Debug.Log(_characters[_activeCharacter].GetData().characterName + "'s turn");
+        }
+    }
+
+    private void ResetTerrainInPosition(CharacterDataSO data)
+    {
+        foreach (Character character in _characters)
+        {
+            if (character.GetData().characterName == data.characterName)
+            {
+                _movementMng.ResetTerrainTypeInPosition(character);
+                return;
+            }
+        }
+    }
+
+    private void AddHealthSytstemToCharacters()
+    {
+        for (int i = 0; i < _characters.Count; i++)
+        {
+            _characters[i].SetNewHealthSystem(_hs[i]);
+        }
     }
 
     private void OnMovementEnd_ChangeTurns()
     {
-        _hs[_activeCharacter].TakeDamage(5);
+        HealthSystem currentHealth = _characters[_activeCharacter].GetHealthSystem();
+
+        if (currentHealth != null)
+            currentHealth.TakeDamage(5);
+
         _turnMng.ChangeTurn();
     }
 
-    private bool RemoveCharacterFromList(List<Character> list, CharacterDataSO data)
+    private bool KillCharacter(List<Character> list, CharacterDataSO data)
     {
-        foreach (Character item in list)
+        int index = list.FindIndex(item => item.GetData().characterName == data.characterName);
+        if (index != -1)
         {
-            if (item.GetData() == data)
-            {
-                list.Remove(item);
-                Debug.Log("CHARACTER " + data.characterName + " WAS REMOVED FROM " + list);
-                return true;
-            }
+            list[index].KillCharacter();
+            Debug.Log("CHARACTER " + data.characterName + " WAS KILLED");
+            return true;
         }
         return false;
     }
 
     private bool AllEnemiesDead()
     {
-        if (_enemies.Count > 0)
-            return false;
-        else
+        int deaths = 0;
+        foreach (Character enemy in _enemies)
+            if (!enemy.IsAlive())
+                deaths++;
+
+        if (deaths == _enemies.Count)
+        {
+            Debug.Log("All enemies are dead!");
             return true;
+        }
+
+        return false;
     }
 
-    private void CreateSeparateCharactersList()
+    private bool OnePlayerAlive()
     {
-        SeparateCharactersList(_characters);
+        int deaths = 0;
+        foreach (Character player in _players)
+            if (!player.IsAlive())
+                deaths++;
+
+        if ((_players.Count - deaths) == 1)
+        {
+            Debug.Log("Only one player left alive!");
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsPlayerDead()
+    {
+        int deaths = 0;
+        foreach (Character player in _players)
+            if (!player.IsAlive())
+                deaths++;
+
+        if (deaths >= 1)
+            return true;
+
+        return false;
+    }
+
+    private Character GetAlivePlayer()
+    {
+        foreach (Character player in _players)
+        {
+            if (player.IsAlive())
+            {
+                Debug.Log($"Last player alive is {player.GetData().characterName}");
+                return player;
+            }
+        }
+
+        return null;
     }
 
     private void SeparateCharactersList(List<Character> list)
