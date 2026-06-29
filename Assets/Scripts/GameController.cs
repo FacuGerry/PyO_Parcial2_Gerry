@@ -4,8 +4,13 @@ using UnityEngine;
 
 public class GameController : MonoBehaviour
 {
-    public event Action OnLose;
-    public event Action<Character> OnWin;
+    public event Action<List<Character>> OnGameInitialized; // _characters
+
+    public event Action<List<Character>, List<Character>, List<Character>> OnDistanceCalculated; // _charsToMelee, _charsToRange, _charsToHeal
+
+    public event Action OnPlayersLose;
+
+    public event Action<Character> OnWin; // winner
 
     [Header("Data")]
     [SerializeField] private MapDataSO _data;
@@ -16,8 +21,8 @@ public class GameController : MonoBehaviour
     [Header("Character's Game Objects")]
     [SerializeField] private GameObject[] _charsGos;
 
-    // Los hago arrays y no listas porque los arrays ocupan la memoria de forma más ordenada
-    // Además, no necesito modificar el tamaño durante runtime
+    [Header("Actions")]
+    [SerializeField] private UiCharacterActions _charActions;
 
     // Map cells
     private List<List<GridCell>> _gridCells;
@@ -34,6 +39,7 @@ public class GameController : MonoBehaviour
     private GameInitializer _gameInit;
     private TurnManager _turnMng;
     private MovementManager _movementMng;
+    private ActionsMananger _actionsMng = new();
 
     private List<HealthSystem> _hs = new();
 
@@ -52,28 +58,46 @@ public class GameController : MonoBehaviour
     private void OnEnable()
     {
         _gameInit.OnStartUpCompleted += OnStartUpCompleted_LoadListsAndStartTurns;
+
+        _movementMng.OnCharacterMove += OnCharacterMove_ReloadActions;
         _movementMng.OnMovementEnd += OnMovementEnd_ChangeTurns;
 
         foreach (HealthSystem hs in _hs)
             hs.OnCharacterDie += OnCharacterDie_RemoveFromList;
+
+        _charActions.OnHealClicked += OnHealClicked_Heal;
+        _charActions.OnMeleeClicked += OnMeleeClicked_AttackMelee;
+        _charActions.OnRangedClicked += OnRangedClicked_AttackRanged;
     }
 
     private void Start()
     {
         _gameInit.StartGame(_data, _charsData, _charsGos);
-        AddHealthSytstemToCharacters();
     }
 
     private void OnDisable()
     {
         _gameInit.OnStartUpCompleted -= OnStartUpCompleted_LoadListsAndStartTurns;
+
+        _movementMng.OnCharacterMove -= OnCharacterMove_ReloadActions;
         _movementMng.OnMovementEnd -= OnMovementEnd_ChangeTurns;
+
         foreach (HealthSystem hs in _hs)
             hs.OnCharacterDie -= OnCharacterDie_RemoveFromList;
+
+        _charActions.OnHealClicked -= OnHealClicked_Heal;
+        _charActions.OnMeleeClicked -= OnMeleeClicked_AttackMelee;
+        _charActions.OnRangedClicked -= OnRangedClicked_AttackRanged;
     }
 
     private void OnDestroy()
     {
+        if (_actionsMng != null)
+        {
+            _actionsMng.OnDistanceCalculated -= OnDistanceCalculated_ToogleButtonsUi;
+            _actionsMng.OnEnemyAttacked -= OnEnemyAttacked_ChangeTurn;
+        }
+
         if (_turnMng != null)
             _turnMng.OnTurnChanged -= OnTurnChanged_ChangeActiveCharacter;
     }
@@ -83,7 +107,16 @@ public class GameController : MonoBehaviour
         _gridCells = map;
         _characters = chars;
 
+        AddHealthSytstemToCharacters();
+
+        OnGameInitialized?.Invoke(_characters);
+
         _movementMng.Initialize(_gridCells, _players);
+
+        _actionsMng.InitializeActions(_characters, _hs);
+        _actionsMng.ToogleEnemiesDead(false);
+        _actionsMng.OnDistanceCalculated += OnDistanceCalculated_ToogleButtonsUi;
+        _actionsMng.OnEnemyAttacked += OnEnemyAttacked_ChangeTurn;
 
         SeparateCharactersList(_characters);
         StartTurns();
@@ -98,6 +131,7 @@ public class GameController : MonoBehaviour
         }
 
         CheckForNextMove(index);
+        _actionsMng.ChangeActiveCharacter(_characters[index]);
     }
 
     private void OnCharacterDie_RemoveFromList(CharacterDataSO data)
@@ -113,9 +147,7 @@ public class GameController : MonoBehaviour
             KillCharacter(_characters, data);
 
             if (AllEnemiesDead())
-            {
-                // Start PvP combat
-            }
+                _actionsMng.ToogleEnemiesDead(true);
         }
         else
         {
@@ -134,7 +166,7 @@ public class GameController : MonoBehaviour
         }
         else if (!AllEnemiesDead() && IsPlayerDead())
         {
-            OnLose?.Invoke();
+            OnPlayersLose?.Invoke();
             Debug.Log("A player died with enemies alive!");
             _movementMng.StopCharacterMovement();
         }
@@ -142,7 +174,7 @@ public class GameController : MonoBehaviour
         {
             _activeCharacter = index;
             _movementMng.ChangeCurrentCharacter(_characters[_activeCharacter]);
-            Debug.Log(_characters[_activeCharacter].GetData().characterName + "'s turn");
+            Debug.Log($"{_characters[_activeCharacter].GetData().characterName}'s turn");
         }
     }
 
@@ -166,14 +198,23 @@ public class GameController : MonoBehaviour
         }
     }
 
+    private void OnCharacterMove_ReloadActions() => ReloadActions();
+
     private void OnMovementEnd_ChangeTurns()
     {
-        HealthSystem currentHealth = _characters[_activeCharacter].GetHealthSystem();
-
-        if (currentHealth != null)
-            currentHealth.TakeDamage(5);
-
         _turnMng.ChangeTurn();
+        ReloadActions();
+    }
+
+    private void ReloadActions()
+    {
+        if (_characters[_activeCharacter].GetData().isPlayer)
+        {
+            _actionsMng.StartPlayerActions();
+            return;
+        }
+
+        _actionsMng.StartEnemyActions();
     }
 
     private bool KillCharacter(List<Character> list, CharacterDataSO data)
@@ -263,5 +304,46 @@ public class GameController : MonoBehaviour
         _turnMng = new(_characters.Count);
         _turnMng.OnTurnChanged += OnTurnChanged_ChangeActiveCharacter;
         _turnMng.StartTurns();
+    }
+
+    private void OnHealClicked_Heal(int index)
+    {
+        _actionsMng.Heal(_characters[_activeCharacter], _characters[index]);
+        _movementMng.StopCharacterMovement();
+        _turnMng.ChangeTurn();
+    }
+
+    private void OnMeleeClicked_AttackMelee(int index)
+    {
+        _actionsMng.AttackMelee(_characters[_activeCharacter], _characters[index]);
+        _movementMng.StopCharacterMovement();
+        _turnMng.ChangeTurn();
+    }
+
+    private void OnRangedClicked_AttackRanged(int index)
+    {
+        _actionsMng.AttackRanged(_characters[_activeCharacter], _characters[index]);
+        _movementMng.StopCharacterMovement();
+        _turnMng.ChangeTurn();
+    }
+
+    private void OnDistanceCalculated_ToogleButtonsUi(List<Character> melee, List<Character> ranged, List<Character> heal)
+    {
+        if (!_characters[_activeCharacter].GetData().isPlayer)
+        {
+            OnDistanceCalculated?.Invoke(null, null, null);
+            return;
+        }
+
+        OnDistanceCalculated?.Invoke(melee, ranged, heal);
+    }
+
+    private void OnEnemyAttacked_ChangeTurn(bool hasAttacked)
+    {
+        if (hasAttacked)
+        {
+            _movementMng.StopCharacterMovement();
+            _turnMng.ChangeTurn();
+        }
     }
 }

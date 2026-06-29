@@ -13,7 +13,7 @@ public class GameInitializer : MonoBehaviour
     private List<List<GridCell>> _gridCells;
 
     // Characters - SEND BACK
-    private List<Character> _chars = new();
+    private List<Character> _chars = new(); 
 
     public void StartGame(MapDataSO mapData, CharacterDataSO[] charsData, GameObject[] charsGos)
     {

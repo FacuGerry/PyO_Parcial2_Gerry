@@ -16,7 +16,7 @@ MonoBehaviour:
   isPlayer: 1
   maxLife: 15
   speed: 4
-  range: 999
+  range: 10
   meleeDamage: 1
   distanceDamage: 3
   healingPoints: 2

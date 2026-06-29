@@ -14,9 +14,11 @@ public class UiWinLose : MonoBehaviour
     [SerializeField] private string _sceneName;
     [SerializeField] private string _loseText;
 
+    private bool _hasToogled = false;
+
     private void OnEnable()
     {
-        _controller.OnLose += OnLose_LoadPanel;
+        _controller.OnPlayersLose += OnLose_LoadPanel;
         _controller.OnWin += OnWin_LoadPanel;
     }
 
@@ -27,7 +29,7 @@ public class UiWinLose : MonoBehaviour
 
     private void OnDisable()
     {
-        _controller.OnLose -= OnLose_LoadPanel;
+        _controller.OnPlayersLose -= OnLose_LoadPanel;
         _controller.OnWin -= OnWin_LoadPanel;
     }
 
@@ -38,14 +40,18 @@ public class UiWinLose : MonoBehaviour
 
     private void OnLose_LoadPanel()
     {
+        if (_hasToogled) return;
         LoadPanel();
         _text.text = _loseText;
+        _hasToogled = true;
     }
 
     private void OnWin_LoadPanel(Character winner)
     {
+        if (_hasToogled) return;
         LoadPanel();
         _text.text = string.Format($"{winner.GetData().characterName} has won!!!");
+        _hasToogled = true;
     }
 
     private void LoadPanel() => _canvas.gameObject.SetActive(true);

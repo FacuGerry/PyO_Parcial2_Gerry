@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MovementManager : MonoBehaviour
 {
+    public event Action OnCharacterMove;
     public event Action OnMovementEnd;
 
     // Current character - used to know if it is a player or an enemy, and therefore knowing HOW to move
@@ -15,14 +16,12 @@ public class MovementManager : MonoBehaviour
     // Map grid - used to know where to go
     private List<List<GridCell>> _map;
 
-    // current speed - used for calculating movements left
+    // Current speed - used for calculating movements left
     private int _currentSpeed = 0;
-
-    private bool _canMove = true;
 
     private void Update()
     {
-        if (_currentSpeed <= 0 || _currentCharacter == null || !_canMove) return;
+        if (_currentSpeed <= 0 || _currentCharacter == null) return;
 
         if (_currentCharacter.GetData().isPlayer)
             PlayerMovement();
@@ -160,6 +159,8 @@ public class MovementManager : MonoBehaviour
         newCell.SetNewTerrainType(type);
 
         _currentCharacter.GetGO().transform.position = newCell.GetCellGO().transform.position;
+
+        OnCharacterMove?.Invoke();
 
         if (_currentSpeed <= 0)
             OnMovementEnd?.Invoke();

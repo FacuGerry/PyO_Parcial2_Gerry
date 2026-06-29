@@ -28,11 +28,21 @@ public class HealthSystem : MonoBehaviour
             OnLifeUpdated?.Invoke(_currentHealth);
             OnCharacterDie?.Invoke(_data);
 
-            Debug.Log(_data.characterName + " died");
+            Debug.Log($"{_data.characterName} died");
 
             gameObject.SetActive(false);
         }
         else
             OnLifeUpdated?.Invoke(_currentHealth);
+    }
+
+    public void Heal(int heal)
+    {
+        _currentHealth += heal;
+        if (_currentHealth >= _data.maxLife)
+            _currentHealth = _data.maxLife;
+
+        OnLifeUpdated?.Invoke(_currentHealth);
+        Debug.Log($"Healed {_data.characterName}");
     }
 }
