@@ -44,11 +44,11 @@ public class ActionsMananger
     {
         StopActions();
 
-        GetCharactersInDistance(1, _charsToMelee, !_enemiesDead);
-        GetCharactersInDistance(_activeChar.GetData().range, _charsToRange, !_enemiesDead);
+        GetCharactersInDistance(1, 1, _charsToMelee, !_enemiesDead);
+        GetCharactersInDistance(2, _activeChar.GetData().range, _charsToRange, !_enemiesDead);
 
         if (_activeChar.GetData().healingRange > 0)
-            GetCharactersInDistance(_activeChar.GetData().healingRange, _charsToHeal, false);
+            GetCharactersInDistance(1, _activeChar.GetData().healingRange, _charsToHeal, false);
         else
             _charsToHeal.Clear();
 
@@ -59,8 +59,8 @@ public class ActionsMananger
 
     public void StartEnemyActions()
     {
-        GetCharactersInDistance(1, _charsToMelee, true);
-        GetCharactersInDistance(_activeChar.GetData().range, _charsToRange, true);
+        GetCharactersInDistance(1, 1, _charsToMelee, true);
+        GetCharactersInDistance(2, _activeChar.GetData().range, _charsToRange, true);
         EnemyAttack();
     }
 
@@ -101,7 +101,7 @@ public class ActionsMananger
         OnEnemyAttacked?.Invoke(false);
     }
 
-    private bool GetCharactersInDistance(int maxDistance, List<Character> list, bool isLookingForEnemies)
+    private bool GetCharactersInDistance(int minDistance, int maxDistance, List<Character> list, bool isLookingForEnemies)
     {
         list.Clear();
 
@@ -118,7 +118,7 @@ public class ActionsMananger
             int distY = Mathf.Abs(_activeChar.GetPosition().y - item.GetPosition().y);
             int distance = Mathf.Max(distX, distY);
 
-            if (distance > 0 && distance <= maxDistance)
+            if (distance >= minDistance && distance <= maxDistance)
                 list.Add(item);
         }
 
