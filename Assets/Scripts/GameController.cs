@@ -6,6 +6,8 @@ public class GameController : MonoBehaviour
 {
     public event Action<List<Character>> OnGameInitialized; // _characters
 
+    public event Action<int> OnTurnChanged; // _activeCharacter
+
     public event Action<List<Character>, List<Character>, List<Character>> OnDistanceCalculated; // _charsToMelee, _charsToRange, _charsToHeal
 
     public event Action OnPlayersLose;
@@ -132,6 +134,7 @@ public class GameController : MonoBehaviour
 
         CheckForNextMove(index);
         _actionsMng.ChangeActiveCharacter(_characters[index]);
+        OnTurnChanged?.Invoke(_activeCharacter);
     }
 
     private void OnCharacterDie_RemoveFromList(CharacterDataSO data)
