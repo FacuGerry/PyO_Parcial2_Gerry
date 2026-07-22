@@ -19,14 +19,47 @@ public class MovementManager : MonoBehaviour
     // Current speed - used for calculating movements left
     private int _currentSpeed = 0;
 
+    private void OnEnable()
+    {
+        UiButtonsMovement.OnMovementClicked += OnMovementClicked_MovePlayer;
+    }
+
     private void Update()
     {
-        if (_currentSpeed <= 0 || _currentCharacter == null) return;
+        if (_currentSpeed <= 0 || _currentCharacter == null || _currentCharacter.GetData().isPlayer)
+            return;
 
-        if (_currentCharacter.GetData().isPlayer)
-            PlayerMovement();
-        else
-            EnemyMovement();
+        EnemyMovement();
+    }
+
+    private void OnDisable()
+    {
+        UiButtonsMovement.OnMovementClicked -= OnMovementClicked_MovePlayer;
+    }
+
+    private void OnMovementClicked_MovePlayer(MovementTypes type)
+    {
+        if (_currentSpeed <= 0 || _currentCharacter == null || !_currentCharacter.GetData().isPlayer)
+            return;
+
+        switch (type)
+        {
+            case MovementTypes.UP:
+                MoveCharacter(0, 1);
+                break;
+
+            case MovementTypes.DOWN:
+                MoveCharacter(0, -1);
+                break;
+
+            case MovementTypes.LEFT:
+                MoveCharacter(-1, 0);
+                break;
+
+            case MovementTypes.RIGHT:
+                MoveCharacter(1, 0);
+                break;
+        }
     }
 
     public void Initialize(List<List<GridCell>> map, List<Character> players)
@@ -45,18 +78,6 @@ public class MovementManager : MonoBehaviour
     {
         _currentSpeed = 0;
         _currentCharacter = null;
-    }
-
-    private void PlayerMovement()
-    {
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-            MoveCharacter(-1, 0);
-        else if (Input.GetKeyDown(KeyCode.RightArrow))
-            MoveCharacter(1, 0);
-        else if (Input.GetKeyDown(KeyCode.UpArrow))
-            MoveCharacter(0, 1);
-        else if (Input.GetKeyDown(KeyCode.DownArrow))
-            MoveCharacter(0, -1);
     }
 
     private void EnemyMovement()
